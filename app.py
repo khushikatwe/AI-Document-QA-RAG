@@ -1,91 +1,45 @@
 import streamlit as st
-from pathlib import Path
+from groq import Groq
+from pypdf import PdfReader
 
-# --------------------------------------------------
-# PAGE CONFIG
-# --------------------------------------------------
-st.set_page_config(
-    page_title="AI Document Assistant",
-    page_icon="📄",
-    layout="wide"
-)
+st.set_page_config(page_title="AI Document Assistant", layout="wide")
 
-# --------------------------------------------------
-# LOAD CSS
-# --------------------------------------------------
-def load_css():
-    css_path = Path("assets/style.css")
-    if css_path.exists():
-        with open(css_path) as f:
-            st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
+st.title("📄 AI Document Assistant")
+st.write("Upload a PDF and ask questions")
 
-load_css()
+uploaded_file = st.file_uploader("Upload PDF", type="pdf")
+question = st.text_input("Ask a question")
+ask = st.button("Ask AI")
 
-# --------------------------------------------------
-# HERO SECTION
-# --------------------------------------------------
-st.markdown("""
-<h1 style="text-align:center;">📄 AI Document Assistant</h1>
-<p style="text-align:center; font-size:18px; color:#6B7280;">
-Upload PDFs • Ask questions • Get instant answers
-</p>
-""", unsafe_allow_html=True)
-
-st.write("")
-
-# --------------------------------------------------
-# MAIN LAYOUT
-# --------------------------------------------------
-left, right = st.columns([1, 2])
-
-with left:
-    st.markdown("### 📂 Upload Document")
-    uploaded_file = st.file_uploader(
-        "Upload a PDF file",
-        type=["pdf"],
-        label_visibility="collapsed"
-    )
-
-    st.markdown("""
-    <div style="font-size:14px; color:#6B7280;">
-    • Supports PDF files only  
-    • Best for notes, reports, textbooks  
-    </div>
-    """, unsafe_allow_html=True)
-
-with right:
-    st.markdown("### 💬 Ask a Question")
-    question = st.text_input(
-        "Type your question here",
-        placeholder="e.g. What is the main topic of this document?"
-    )
-
-    ask_btn = st.button("✨ Ask AI")
-
-# --------------------------------------------------
-# LOGIC (PLACEHOLDER – SAFE)
-# --------------------------------------------------
-if ask_btn:
-    if uploaded_file is None:
-        st.warning("⚠️ Please upload a PDF first.")
-    elif question.strip() == "":
-        st.warning("⚠️ Please enter a question.")
+if ask:
+    if not uploaded_file:
+        st.warning("Upload a PDF")
+    elif not question:
+        st.warning("Enter a question")
     else:
-        with st.spinner("🤖 Thinking..."):
-            # ---- PLACEHOLDER RESPONSE ----
-            # Replace this later with your RAG / LLM logic
-            st.success("✅ Answer")
-            st.write(
-                "This is a sample response. "
-                "Connect your RAG / LLM logic here to generate real answers."
+        with st.spinner("Thinking..."):
+            # Read PDF text
+            reader = PdfReader(uploaded_file)
+            text = ""
+            for page in reader.pages:
+                text += page.extract_text()
+
+            # Call LLM
+            client = Groq(api_key=st.secrets["GROQ_API_KEY"])
+
+            completion = client.chat.completions.create(
+                model="llama3-8b-8192",
+                messages=[
+                    {
+                        "role": "system",
+                        "content": "Answer the question using the given document only."
+                    },
+                    {
+                        "role": "user",
+                        "content": f"Document:\n{text}\n\nQuestion: {question}"
+                    }
+                ],
             )
 
-# --------------------------------------------------
-# FOOTER
-# --------------------------------------------------
-st.markdown("""
-<hr>
-<p style="text-align:center; font-size:13px; color:#9CA3AF;">
-Built with ❤️ using Streamlit • AI-powered Document Q&A
-</p>
-""", unsafe_allow_html=True)
+            st.success("Answer")
+            st.write(completion.choices[0].message.content)
