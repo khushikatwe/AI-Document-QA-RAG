@@ -1,0 +1,31 @@
+/* GEN-Z LIGHT AESTHETIC */
+
+.stApp {
+    background: linear-gradient(180deg, #F9FAFB, #EEF2FF);
+}
+
+/* Remove Streamlit branding */
+#MainMenu, footer, header {
+    visibility: hidden;
+}
+
+/* Buttons */
+.stButton > button {
+    border-radius: 14px;
+    padding: 10px 24px;
+    background: linear-gradient(135deg, #6366F1, #8B5CF6);
+    color: white;
+    border: none;
+    font-weight: 600;
+}
+
+/* Inputs */
+input, textarea {
+    border-radius: 12px !important;
+}
+
+/* File uploader */
+section[data-testid="stFileUploader"] {
+    border: 2px dashed #6366F1;
+    border-radius: 16px;
+}
