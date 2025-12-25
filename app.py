@@ -21,11 +21,12 @@ STORAGE_DIR = "storage"
 os.makedirs(DATA_DIR, exist_ok=True)
 
 # ---------------- UI HEADER ----------------
-st.set_page_config(page_title="AI Document Q&A", layout="centered")
-st.title("📄 AI Document Q&A System")
-st.caption("Upload a PDF, ask questions, or get a quick summary")
+st.set_page_config(
+    page_title="AI Document QA",
+    page_icon="📄",
+    layout="wide"
+)
 
-st.divider()
 
 # ---------------- PDF UPLOAD ----------------
 uploaded_file = st.file_uploader("📤 Upload a PDF", type=["pdf"])
