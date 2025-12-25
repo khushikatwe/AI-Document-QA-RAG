@@ -1,48 +1,54 @@
 import streamlit as st
 from pypdf import PdfReader
+from openai import OpenAI
 
-st.set_page_config(page_title="Document Reader", layout="wide")
+st.set_page_config(page_title="AI Document Assistant", layout="wide")
 
-st.title("📄 Document Reader")
-st.write("Upload a PDF and ask a question about it")
+st.title("📄 AI Document Assistant")
+st.write("Upload a PDF and ask any question about it")
 
 uploaded_file = st.file_uploader("Upload PDF", type="pdf")
 question = st.text_input("Ask a question")
+ask = st.button("Ask")
 
-if uploaded_file:
-    reader = PdfReader(uploaded_file)
-    text = ""
-
-    for page in reader.pages:
-        extracted = page.extract_text()
-        if extracted:
-            text += extracted + "\n"
-
-    if not text.strip():
-        st.error("No readable text found in this PDF")
+if ask:
+    if not uploaded_file:
+        st.warning("Please upload a PDF")
+    elif not question:
+        st.warning("Please enter a question")
     else:
-        if question:
-            st.success("Answer")
+        with st.spinner("Thinking..."):
 
-            q = question.lower()
+            # Read PDF
+            reader = PdfReader(uploaded_file)
+            text = ""
+            for page in reader.pages:
+                if page.extract_text():
+                    text += page.extract_text()
 
-            # Basic question handling (SAFE, NO AI)
-            if "about" in q or "summary" in q:
-                st.write("This document discusses the following topics:")
-                st.write(text[:800] + "...")
-            elif "elastic memory" in q:
-                st.write(
-                    "The document explains Elastic Memory Composites (EMC), "
-                    "their shape memory behavior, elastic strain storage, "
-                    "and applications such as deployable space structures."
-                )
-            elif "corrosion" in q:
-                st.write(
-                    "The document includes a section on smart corrosion protection coatings, "
-                    "their purpose, causes of failure, and environmental effects."
-                )
+            if not text.strip():
+                st.error("No readable text found in PDF")
             else:
-                st.write("Relevant content from the document:")
-                st.write(text[:800] + "...")
-        else:
-            st.info("Type a question above to get an answer")
+                # Groq via OpenAI-compatible API
+                client = OpenAI(
+                    api_key=st.secrets["GROQ_API_KEY"],
+                    base_url="https://api.groq.com/openai/v1"
+                )
+
+                response = client.chat.completions.create(
+                    model="llama3-8b-8192",
+                    messages=[
+                        {
+                            "role": "system",
+                            "content": "You are an AI assistant that answers questions strictly using the provided document."
+                        },
+                        {
+                            "role": "user",
+                            "content": f"Document:\n{text}\n\nQuestion: {question}"
+                        }
+                    ],
+                    temperature=0.2
+                )
+
+                st.success("Answer")
+                st.write(response.choices[0].message.content)
